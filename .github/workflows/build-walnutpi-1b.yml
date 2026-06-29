@@ -88,6 +88,9 @@ jobs:
           KERNEL_TAGS: "allwinner"
         working-directory: ${{ github.workspace }}
         run: |
+          # 强制导出 KERNEL_TAGS,防止 yml env 没生效
+          export KERNEL_TAGS="allwinner"
+          echo "KERNEL_TAGS=${KERNEL_TAGS}"
           chmod +x renas
           echo "===== 检查 renas 里 OUT 路径定义 ====="
           grep -n -E "OUT|out/" renas | head -30
