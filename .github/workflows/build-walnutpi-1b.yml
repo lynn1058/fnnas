@@ -59,7 +59,12 @@ jobs:
           wget --show-progress \
             "https://github.com/ophub/fnnas/releases/download/fnnas_base_image/fnnas-official-arm64-image_allwinner_1254.img.xz" \
             -O fnos_arm.img.xz
+          echo "===== 下载完成,开始解压 ====="
           ls -la
+          # renas 期望的是 *.img,需要把 .img.xz 解压成 .img
+          xz -d -f fnos_arm.img.xz
+          ls -la
+          echo "===== 解压后目录 ====="
 
       - name: Build WalnutPi-1B image via renas
         env:
