@@ -94,34 +94,44 @@ jobs:
       - name: Verify WalnutPi-1B dtb is embedded
         working-directory: ${{ github.workspace }}
         run: |
-          IMG=$(ls out/fnnas_*walnutpi-1b*.img 2>/dev/null | head -n1)
-          if [[ -z "${IMG}" ]]; then
+          # 产物在 fnnas/out/ 且是 .img.gz
+          IMG_GZ=$(ls fnnas/out/fnnas_*WalnutPi-1B*.img.gz 2>/dev/null | head -n1)
+          if [[ -z "${IMG_GZ}" ]]; then
             echo "ERROR: 未找到 walnutpi-1b 镜像" >&2
-            echo "===== out 目录 =====" >&2
-            ls -la out/ >&2 || echo "out 目录不存在" >&2
-            echo "===== 全局查找 =====" >&2
-            find . -name "*.img" 2>/dev/null | head -20 >&2
+            echo "===== fnnas/out 目录 =====" >&2
+            ls -la fnnas/out/ >&2 || echo "fnnas/out 不存在" >&2
             exit 1
           fi
-          echo "镜像: ${IMG}"
-          LOOP=$(sudo losetup -fP --show "${IMG}")
+          echo "镜像(压缩): ${IMG_GZ}"
+          # 解压到临时目录
+          WORK_DIR=$(mktemp -d)
+          cp "${IMG_GZ}" "${WORK_DIR}/"
+          cd "${WORK_DIR}"
+          7z x -y "$(basename ${IMG_GZ})" > /dev/null
+          IMG=$(ls *.img | head -n1)
+          echo "镜像(解压): ${IMG}"
+          cd - > /dev/null
+          # 用 losetup 挂载 BOOTFS 验证
+          LOOP=$(sudo losetup -fP --show "${WORK_DIR}/${IMG}")
           sleep 3
           sudo mount -o ro "${LOOP}p1" /mnt 2>/dev/null || sudo mount "${LOOP}p1" /mnt
           echo "===== BOOTFS 内容 ====="
-          ls /mnt/dtb/allwinner/ | grep -E 'sun50i-(h616-h616|h618)' | head -20
+          ls /mnt/dtb/allwinner/ | grep -i walnutpi | head -10
           echo "===== armbianEnv.txt ====="
           cat /mnt/armbianEnv.txt
           echo "===== 验证关键 DTB ====="
           ls -la /mnt/dtb/allwinner/sun50i-h616-walnutpi-1b.dtb
           sudo umount /mnt
           sudo losetup -d "${LOOP}"
+          # 清理
+          rm -rf "${WORK_DIR}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
           name: fnnas-walnutpi-1b
-          # 注意:path 改成 out/ 根目录下的产物,不要带 fnnas/ 前缀
-          path: out/fnnas_*walnutpi-1b*.img
+          # 注意:fnnas/out/ 下的大写 WalnutPi-1B,.img.gz
+          path: fnnas/out/fnnas_*WalnutPi-1B*.img.gz
           if-no-files-found: error
           retention-days: 14
 
@@ -132,9 +142,8 @@ jobs:
           tag_name: walnutpi-1b-${{ github.run_number }}
           name: "FnNAS WalnutPi-1B build ${{ github.run_number }}"
           draft: true
-          # 注意:这里也是 out/,不是 fnnas/out/
           files: |
-            out/fnnas_*walnutpi-1b*.img
+            fnnas/out/fnnas_*WalnutPi-1B*.img.gz
           body: |
             自动构建的核桃派 1B 专用 FnNAS 镜像
 
