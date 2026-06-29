@@ -53,6 +53,7 @@ jobs:
 
       - name: Prepare base fnos image
         if: steps.cache-fnos.outputs.cache-hit != 'true'
+        working-directory: ${{ github.workspace }}
         run: |
           mkdir -p fnnas-arm64
           cd fnnas-arm64
@@ -65,13 +66,12 @@ jobs:
           xz -d -f fnos_arm.img.xz
           ls -la
           echo "===== 解压后目录 ====="
-          # 回到根目录,方便后续步骤
-          cd ../..
-          pwd
-          ls -la fnnas-arm64/
+          echo "当前目录: $(pwd)"
+          ls -la $GITHUB_WORKSPACE/fnnas-arm64/ 2>/dev/null || echo "not found at $GITHUB_WORKSPACE/fnnas-arm64/"
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
+        working-directory: ${{ github.workspace }}
         run: |
           chmod +x renas
           # renas 脚本在仓库根目录,基础镜像在 fnnas/fnnas-arm64/
