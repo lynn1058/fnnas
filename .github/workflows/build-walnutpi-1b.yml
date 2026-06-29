@@ -42,7 +42,7 @@ jobs:
         id: cache-fnos
         uses: actions/cache@v5
         with:
-          path: fnnas/fnnas-arm64/fnos_arm_*.img
+          path: fnnas-arm64/fnos_arm_*.img
           key: fnos-base-v1
 
       - name: Install dependencies
@@ -54,8 +54,8 @@ jobs:
       - name: Prepare base fnos image
         if: steps.cache-fnos.outputs.cache-hit != 'true'
         run: |
-          mkdir -p fnnas/fnnas-arm64
-          cd fnnas/fnnas-arm64
+          mkdir -p fnnas-arm64
+          cd fnnas-arm64
           wget --show-progress \
             "https://github.com/ophub/fnnas/releases/download/fnnas_base_image/fnnas-official-arm64-image_allwinner_1254.img.xz" \
             -O fnos_arm.img.xz
@@ -68,7 +68,7 @@ jobs:
           # 回到根目录,方便后续步骤
           cd ../..
           pwd
-          ls -la fnnas/fnnas-arm64/
+          ls -la fnnas-arm64/
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
