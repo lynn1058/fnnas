@@ -85,7 +85,7 @@ jobs:
 
       - name: Verify WalnutPi-1B dtb is embedded
         run: |
-          IMG=$(ls fnnas/out/fnnas_*walnutpi-1b*.img 2>/dev/null | head -n1)
+          IMG=$(ls out/fnnas_*walnutpi-1b*.img 2>/dev/null | head -n1)
           if [[ -z "${IMG}" ]]; then
             echo "ERROR: 未找到 walnutpi-1b 镜像"
             exit 1
