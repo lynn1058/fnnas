@@ -65,9 +65,8 @@ jobs:
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
         run: |
-          cd fnnas
           chmod +x renas
-          # 第一次构建(走完整流水线)
+          # renas 脚本在仓库根目录，基础镜像在 fnnas/fnnas-arm64/
           sudo ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
           echo "===== 产物列表 ====="
           ls -lh out/ || true
