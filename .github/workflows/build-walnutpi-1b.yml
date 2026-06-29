@@ -5,10 +5,7 @@ name: build-walnutpi-1b
 # 核桃派 1B 专用 FnNAS 镜像构建工作流
 #
 # 触发条件:
-#   1) push 到 main 分支且修改了以下路径:
-#        - make-fnnas/fnnas-files/common-files/etc/model_database.conf
-#        - make-fnnas/fnnas-files/common-files/boot/dtb/allwinner/
-#        - renas
+#   1) push 到 main 分支
 #   2) 手动 workflow_dispatch 触发
 #
 # 产物:
@@ -57,41 +54,48 @@ jobs:
         run: |
           mkdir -p fnnas-arm64
           cd fnnas-arm64
+          # 注意:这里不能用反引号,直接写完整 URL
           wget --show-progress \
             "https://github.com/ophub/fnnas/releases/download/fnnas_base_image/fnnas-official-arm64-image_allwinner_1254.img.xz" \
             -O fnos_arm.img.xz
           echo "===== 下载完成,开始解压 ====="
           ls -la
-          # renas 期望的是 *.img,需要把 .img.xz 解压成 .img
           xz -d -f fnos_arm.img.xz
           ls -la
           echo "===== 解压后目录 ====="
           echo "当前目录: $(pwd)"
           ls -la $GITHUB_WORKSPACE/fnnas-arm64/ 2>/dev/null || echo "not found at $GITHUB_WORKSPACE/fnnas-arm64/"
+
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
         working-directory: ${{ github.workspace }}
         run: |
           chmod +x renas
-          # renas 脚本在仓库根目录,基础镜像在 fnnas/fnnas-arm64/
-          # 先确认镜像存在
           echo "===== 检查基础镜像 ====="
           ls -la fnnas-arm64/
+          echo "===== 检查 renas ====="
+          ls -la renas
           echo "===== 开始编译 ====="
           sudo ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
-          echo "===== 产物列表 ====="
+          echo "===== 产物列表 (out/) ====="
           ls -lh out/ || true
+          echo "===== 全局查找产物 ====="
+          find . -name "*walnutpi-1b*" 2>/dev/null | head -20
 
       - name: Verify WalnutPi-1B dtb is embedded
+        working-directory: ${{ github.workspace }}
         run: |
           IMG=$(ls out/fnnas_*walnutpi-1b*.img 2>/dev/null | head -n1)
           if [[ -z "${IMG}" ]]; then
-            echo "ERROR: 未找到 walnutpi-1b 镜像"
+            echo "ERROR: 未找到 walnutpi-1b 镜像" >&2
+            echo "===== out 目录 =====" >&2
+            ls -la out/ >&2 || echo "out 目录不存在" >&2
+            echo "===== 全局查找 =====" >&2
+            find . -name "*.img" 2>/dev/null | head -20 >&2
             exit 1
           fi
           echo "镜像: ${IMG}"
-          # 用 losetup 挂载 BOOTFS 验证
           LOOP=$(sudo losetup -fP --show "${IMG}")
           sleep 3
           sudo mount -o ro "${LOOP}p1" /mnt 2>/dev/null || sudo mount "${LOOP}p1" /mnt
@@ -108,7 +112,8 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: fnnas-walnutpi-1b
-          path: fnnas/out/fnnas_*walnutpi-1b*.img
+          # 注意:path 改成 out/ 根目录下的产物,不要带 fnnas/ 前缀
+          path: out/fnnas_*walnutpi-1b*.img
           if-no-files-found: error
           retention-days: 14
 
@@ -119,8 +124,9 @@ jobs:
           tag_name: walnutpi-1b-${{ github.run_number }}
           name: "FnNAS WalnutPi-1B build ${{ github.run_number }}"
           draft: true
+          # 注意:这里也是 out/,不是 fnnas/out/
           files: |
-            fnnas/out/fnnas_*walnutpi-1b*.img
+            out/fnnas_*walnutpi-1b*.img
           body: |
             自动构建的核桃派 1B 专用 FnNAS 镜像
 
@@ -129,6 +135,4 @@ jobs:
             - workflow: ${{ github.workflow }} #${{ github.run_number }}
 
             烧录:
-            ```
-            sudo dd if=fnnas_*_walnutpi-1b.img of=/dev/sdX bs=4M status=progress conv=fsync
             ```
