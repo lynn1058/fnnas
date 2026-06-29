@@ -112,8 +112,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Optional: create draft release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Optional create draft release
+        if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: walnutpi-1b-${{ github.run_number }}
