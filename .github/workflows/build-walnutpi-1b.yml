@@ -19,11 +19,6 @@ name: build-walnutpi-1b
 on:
   push:
     branches: [main]
-    paths:
-      - 'make-fnnas/fnnas-files/common-files/etc/model_database.conf'
-      - 'make-fnnas/fnnas-files/common-files/boot/dtb/allwinner/**'
-      - 'renas'
-      - '.github/workflows/build-walnutpi-1b.yml'
   workflow_dispatch:
     inputs:
       kernel:
