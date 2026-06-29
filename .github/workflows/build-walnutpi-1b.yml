@@ -1,0 +1,134 @@
+name: build-walnutpi-1b
+
+#================================================================================================
+#
+# 核桃派 1B 专用 FnNAS 镜像构建工作流
+#
+# 触发条件:
+#   1) push 到 main 分支且修改了以下路径:
+#        - make-fnnas/fnnas-files/common-files/etc/model_database.conf
+#        - make-fnnas/fnnas-files/common-files/boot/dtb/allwinner/
+#        - renas
+#   2) 手动 workflow_dispatch 触发
+#
+# 产物:
+#   - fnnas_<...>_walnutpi-1b.img (从 renas 的 out/ 目录上传)
+#
+#================================================================================================
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'make-fnnas/fnnas-files/common-files/etc/model_database.conf'
+      - 'make-fnnas/fnnas-files/common-files/boot/dtb/allwinner/**'
+      - 'renas'
+      - '.github/workflows/build-walnutpi-1b.yml'
+  workflow_dispatch:
+    inputs:
+      kernel:
+        description: 'Kernel series (e.g. 6.18.y)'
+        required: false
+        default: '6.18.y'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache fnos base image
+        id: cache-fnos
+        uses: actions/cache@v4
+        with:
+          path: fnnas/fnnas-arm64/fnos_arm_*.img
+          key: fnos-base-v1
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y $(cat make-fnnas/script/ubuntu2404-make-fnnas-depends 2>/dev/null) \
+            p7zip-full wget curl xz-utils
+
+      - name: Prepare base fnos image
+        if: steps.cache-fnos.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p fnnas/fnnas-arm64
+          cd fnnas/fnnas-arm64
+          # 从 fnnas 官方或 ophub/fnnas Releases 下载最新 Arm64 基础镜像
+          # 这里使用官方最新稳定版,实际版本号请按需调整
+          wget -q --show-progress \
+            "https://github.com/ophub/fnnas/releases/download/fnnos/Arm64_fnos.img.xz" \
+            -O fnos_arm.img.xz || \
+          wget -q --show-progress \
+            "https://github.com/ophub/fnnas/releases/download/fnnos/Arm64_fnos.img.gz" \
+            -O fnos_arm.img.gz
+          ls -la
+
+      - name: Build WalnutPi-1B image via renas
+        env:
+          KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
+        run: |
+          cd fnnas
+          chmod +x renas
+          # 第一次构建(走完整流水线)
+          sudo ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
+          echo "===== 产物列表 ====="
+          ls -lh out/ || true
+
+      - name: Verify WalnutPi-1B dtb is embedded
+        run: |
+          IMG=$(ls fnnas/out/fnnas_*walnutpi-1b*.img 2>/dev/null | head -n1)
+          if [[ -z "${IMG}" ]]; then
+            echo "ERROR: 未找到 walnutpi-1b 镜像"
+            exit 1
+          fi
+          echo "镜像: ${IMG}"
+          # 用 losetup 挂载 BOOTFS 验证
+          LOOP=$(sudo losetup -fP --show "${IMG}")
+          sleep 3
+          sudo mount -o ro "${LOOP}p1" /mnt 2>/dev/null || sudo mount "${LOOP}p1" /mnt
+          echo "===== BOOTFS 内容 ====="
+          ls /mnt/dtb/allwinner/ | grep -E 'sun50i-(h616-h616|h618)' | head -20
+          echo "===== armbianEnv.txt ====="
+          cat /mnt/armbianEnv.txt
+          echo "===== 验证关键 DTB ====="
+          ls -la /mnt/dtb/allwinner/sun50i-h616-walnutpi-1b.dtb
+          sudo umount /mnt
+          sudo losetup -d "${LOOP}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fnnas-walnutpi-1b
+          path: fnnas/out/fnnas_*walnutpi-1b*.img
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Optional: create draft release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: walnutpi-1b-${{ github.run_number }}
+          name: "FnNAS WalnutPi-1B build ${{ github.run_number }}"
+          draft: true
+          files: |
+            fnnas/out/fnnas_*walnutpi-1b*.img
+          body: |
+            自动构建的核桃派 1B 专用 FnNAS 镜像
+
+            - 内核: ${{ github.event.inputs.kernel || '6.18.y' }}
+            - commit: ${{ github.sha }}
+            - workflow: ${{ github.workflow }} #${{ github.run_number }}
+
+            烧录:
+            ```
+            sudo dd if=fnnas_*_walnutpi-1b.img of=/dev/sdX bs=4M status=progress conv=fsync
+            ```
