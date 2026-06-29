@@ -65,7 +65,23 @@ jobs:
           echo "===== 解压后目录 ====="
           echo "当前目录: $(pwd)"
           ls -la $GITHUB_WORKSPACE/fnnas-arm64/ 2>/dev/null || echo "not found at $GITHUB_WORKSPACE/fnnas-arm64/"
-
+      - name: Pre-build check
+        working-directory: ${{ github.workspace }}
+        run: |
+          echo "===== renas 里 supplement 相关代码 ====="
+          grep -n -A 5 "supplement" renas || echo "找不到 supplement 关键字"
+          echo ""
+          echo "===== renas 里 dtb 注入相关代码 ====="
+          grep -n -B 1 -A 3 "dtb/" renas | head -60
+          echo ""
+          echo "===== renas 里 armbianEnv 相关代码 ====="
+          grep -n -B 1 -A 8 "armbianEnv" renas | head -80
+          echo ""
+          echo "===== renas 里 fdtfile 相关代码 ====="
+          grep -n -B 1 -A 3 "fdtfile" renas | head -40
+          echo ""
+          echo "===== 当前 model_database.conf 里 WalnutPi ====="
+          grep -i walnutpi make-fnnas/fnnas-files/common-files/etc/model_database.conf
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
