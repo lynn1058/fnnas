@@ -72,16 +72,24 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           chmod +x renas
-          echo "===== 检查基础镜像 ====="
-          ls -la fnnas-arm64/
-          echo "===== 检查 renas ====="
-          ls -la renas
+          echo "===== 检查 renas 里 OUT 路径定义 ====="
+          grep -n -E "OUT|out/" renas | head -30
+          echo "===== 检查所有 .img 镜像 (含大写) ====="
+          find . -iname "*walnutpi*" 2>/dev/null
+          find . -iname "fnnas_*arm64*.img" 2>/dev/null | head -20
+          echo "===== 查 .gz 包 ====="
+          find . -name "*.img.gz" 2>/dev/null | head -20
+          echo "===== 仓库根目录所有大文件 ====="
+          find . -type f -size +100M 2>/dev/null
           echo "===== 开始编译 ====="
           sudo ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
-          echo "===== 产物列表 (out/) ====="
-          ls -lh out/ || true
-          echo "===== 全局查找产物 ====="
-          find . -name "*walnutpi-1b*" 2>/dev/null | head -20
+          echo "===== 编译后再查一遍 ====="
+          find . -iname "*walnutpi*" 2>/dev/null
+          find . -iname "fnnas_*arm64*.img" 2>/dev/null | head -20
+          echo "===== 各可能输出目录 ====="
+          ls -la out/ 2>/dev/null || echo "no out/"
+          ls -la fnnas-arm64/out/ 2>/dev/null || echo "no fnnas-arm64/out/"
+          ls -la make-fnnas/out/ 2>/dev/null || echo "no make-fnnas/out/"
 
       - name: Verify WalnutPi-1B dtb is embedded
         working-directory: ${{ github.workspace }}
