@@ -65,13 +65,20 @@ jobs:
           xz -d -f fnos_arm.img.xz
           ls -la
           echo "===== 解压后目录 ====="
-
+          # 回到根目录,方便后续步骤
+          cd ../..
+          pwd
+          ls -la fnnas/fnnas-arm64/
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
         run: |
           chmod +x renas
-          # renas 脚本在仓库根目录，基础镜像在 fnnas/fnnas-arm64/
+          # renas 脚本在仓库根目录,基础镜像在 fnnas/fnnas-arm64/
+          # 先确认镜像存在
+          echo "===== 检查基础镜像 ====="
+          ls -la fnnas/fnnas-arm64/
+          echo "===== 开始编译 ====="
           sudo ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
           echo "===== 产物列表 ====="
           ls -lh out/ || true
