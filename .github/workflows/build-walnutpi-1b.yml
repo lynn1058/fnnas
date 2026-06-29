@@ -36,11 +36,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache fnos base image
         id: cache-fnos
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: fnnas/fnnas-arm64/fnos_arm_*.img
           key: fnos-base-v1
@@ -99,7 +99,7 @@ jobs:
           sudo losetup -d "${LOOP}"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: fnnas-walnutpi-1b
           path: fnnas/out/fnnas_*walnutpi-1b*.img
