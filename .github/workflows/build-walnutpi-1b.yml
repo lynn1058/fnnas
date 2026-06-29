@@ -25,6 +25,10 @@ on:
         description: 'Kernel series (e.g. 6.18.y)'
         required: false
         default: '6.18.y'
+      fnos_url:
+        description: 'Direct download URL for fnos Arm64 base image (img.xz or img.gz)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -53,17 +57,22 @@ jobs:
 
       - name: Prepare base fnos image
         if: steps.cache-fnos.outputs.cache-hit != 'true'
+        env:
+          FNOS_URL: ${{ github.event.inputs.fnos_url }}
         run: |
           mkdir -p fnnas/fnnas-arm64
           cd fnnas/fnnas-arm64
-          # 从 fnnas 官方或 ophub/fnnas Releases 下载最新 Arm64 基础镜像
-          # 这里使用官方最新稳定版,实际版本号请按需调整
-          wget -q --show-progress \
-            "https://github.com/ophub/fnnas/releases/download/fnnos/Arm64_fnos.img.xz" \
-            -O fnos_arm.img.xz || \
-          wget -q --show-progress \
-            "https://github.com/ophub/fnnas/releases/download/fnnos/Arm64_fnos.img.gz" \
-            -O fnos_arm.img.gz
+
+          if [[ -n "${FNOS_URL}" ]]; then
+            echo "Using provided FNOS_URL: ${FNOS_URL}"
+            wget --show-progress "${FNOS_URL}" -O fnos_arm.img.xz || \
+            wget --show-progress "${FNOS_URL}" -O fnos_arm.img.gz
+          else
+            echo "::error::No fnos_url provided. Please provide a direct download URL via workflow_dispatch input."
+            echo "::error::Example URL: https://github.com/ophub/fnnas/releases/download/<tag>/<file>.img.xz"
+            exit 1
+          fi
+
           ls -la
 
       - name: Build WalnutPi-1B image via renas
