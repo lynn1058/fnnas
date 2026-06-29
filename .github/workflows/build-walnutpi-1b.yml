@@ -77,7 +77,7 @@ jobs:
           # renas 脚本在仓库根目录,基础镜像在 fnnas/fnnas-arm64/
           # 先确认镜像存在
           echo "===== 检查基础镜像 ====="
-          ls -la fnnas/fnnas-arm64/
+          ls -la fnnas-arm64/
           echo "===== 开始编译 ====="
           sudo ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
           echo "===== 产物列表 ====="
