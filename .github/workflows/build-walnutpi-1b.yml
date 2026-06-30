@@ -71,43 +71,33 @@ jobs:
           echo "===== renas 里 supplement 相关代码 ====="
           grep -n -A 5 "supplement" renas || echo "找不到 supplement 关键字"
           echo ""
-          echo "===== renas 里 dtb 注入相关代码 ====="
-          grep -n -B 1 -A 3 "dtb/" renas | head -60
+          echo "===== renas 里 KERNEL_TAGS 报错位置上下文 ====="
+          grep -n -B 10 -A 5 "Missing.*KERNEL_TAGS" renas
           echo ""
-          echo "===== renas 里 armbianEnv 相关代码 ====="
-          grep -n -B 1 -A 8 "armbianEnv" renas | head -80
+          echo "===== renas 里 285-310 行（make_board 判断）====="
+          sed -n '285,310p' renas
           echo ""
-          echo "===== renas 里 fdtfile 相关代码 ====="
-          grep -n -B 1 -A 3 "fdtfile" renas | head -40
+          echo "===== clean_model_conf 函数定义 ====="
+          grep -n -A 10 "^clean_model_conf()" renas
           echo ""
-          echo "===== renas 里 KERNEL_TAGS 完整相关代码 ====="
-          grep -n -B 2 -A 5 "KERNEL_TAGS" renas
-          echo ""
-          echo "===== KERNEL_TAGS 报错位置上下文 ====="
-          grep -n -B 5 -A 5 "Missing.*KERNEL_TAGS" renas
-          echo ""
-          echo "===== renas 头部 30 行 ====="
-          head -30 renas
+          echo "===== renas 里 allwinner_kernel 定义 ====="
+          grep -n "allwinner_kernel" renas | head -5
           echo ""
           echo "===== 当前 model_database.conf 里 WalnutPi ====="
           grep -i walnutpi make-fnnas/fnnas-files/common-files/etc/model_database.conf
-          echo "===== clean_model_conf 函数定义 ====="
-          grep -n -A 25 "^clean_model_conf()" renas | head -40
           echo ""
-          echo "===== renas 里 allwinner_kernel 定义 ====="
-          grep -n "allwinner_kernel" renas | head -10
-          echo ""
-          echo "===== 模拟查询 w208 行 ====="
+          echo "===== 模拟 make_board=WalnutPi-1B 的 board_list 过滤 ====="
           MODEL_CONF="make-fnnas/fnnas-files/common-files/etc/model_database.conf"
-          echo "model_conf = ${MODEL_CONF}"
-          echo "w208 行的 awk 第9列:"
-          grep -v "^#" "${MODEL_CONF}" | grep -v "^$" | grep -E "^w208" | awk -F':' '{print $9}'
-          echo "w208 行 grep :yes$ 后:"
-          grep -v "^#" "${MODEL_CONF}" | grep -v "^$" | grep -E "^w208.*:yes$" | awk -F':' '{print $9}'
-          echo "===== w208 行的字段数 ====="
-          grep -E "^w208" "${MODEL_CONF}" | awk -F':' '{print NF}'
-          echo "===== model_database.conf 的所有字段数 ====="
-          grep -E "^[a-z][0-9]+" "${MODEL_CONF}" | awk -F':' '{print NR": "$0" -> "NF" fields"}'
+          make_board="WalnutPi-1B"
+          board_list=":${make_board}:"
+          echo "board_list=${board_list}"
+          echo "===== clean_model_conf | grep 测试 ====="
+          sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' "${MODEL_CONF}" | grep -E "^[^#].+" | grep "${board_list}" | head -5
+          echo ""
+          echo "===== 完整模拟 kernel_from ====="
+          kernel_from=($(sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' "${MODEL_CONF}" | grep -E "^[^#].+" | grep -E "^.*${board_list}$" | awk -F':' '{print $9}' | sort -u | xargs))
+          echo "kernel_from 数组: ${kernel_from[@]}"
+          echo "kernel_from 元素数: ${#kernel_from[@]}"
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
