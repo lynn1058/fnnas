@@ -68,6 +68,7 @@ jobs:
       - name: Pre-build check
         working-directory: ${{ github.workspace }}
         run: |
+          # 之前的调试代码
           echo "===== 仓库 model_database.conf 里 w208 行原始 ====="
           grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | cat -A
           echo ""
@@ -82,6 +83,13 @@ jobs:
           echo ""
           echo "===== 用 make_board=allwinner 模拟完整 grep ====="
           grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^.*:allwinner:.*:yes$" | head -3
+          # 关键: 修改 renas 支持 tab
+          echo "===== 修改 renas 的 clean_model_conf 让它支持 tab ====="
+          sed -i "s/'s/$$ $$$$ $$\*//g'/'s/[ \\t][ \\t]*//g'/" renas
+          echo "===== 修改后的 clean_model_conf ====="
+          grep "clean_model_conf" renas | head -5
+          echo "===== 重新测试 ====="
+          grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ \t][ \t]*//g' | grep -E "^.*:allwinner:.*:yes$" | head -3
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
