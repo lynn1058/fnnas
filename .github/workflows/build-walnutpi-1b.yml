@@ -68,46 +68,18 @@ jobs:
       - name: Pre-build check
         working-directory: ${{ github.workspace }}
         run: |
-          echo "===== renas 里 supplement 相关代码 ====="
-          grep -n -A 5 "supplement" renas || echo "找不到 supplement 关键字"
+          echo "===== renas 里 285-340 行（完整 if-elif-else）====="
+          sed -n '285,340p' renas
           echo ""
-          echo "===== renas 里 KERNEL_TAGS 报错位置上下文 ====="
-          grep -n -B 15 -A 5 "Missing.*KERNEL_TAGS" renas
-          echo ""
-          echo "===== renas 里 270-345 行（完整 if-elif-else 链）====="
-          sed -n '270,345p' renas
-          echo ""
-          echo "===== clean_model_conf 函数定义 ====="
-          grep -n -A 5 "^clean_model_conf()" renas
-          echo ""
-          echo "===== renas 里 allwinner_kernel 定义 ====="
-          grep -n "allwinner_kernel" renas | head -5
-          echo ""
-          echo "===== 当前 model_database.conf 里 WalnutPi ====="
-          grep -i walnutpi make-fnnas/fnnas-files/common-files/etc/model_database.conf
-          echo ""
-          echo "===== 模拟 make_board=WalnutPi-1B 的 board_list 过滤 ====="
+          echo "===== 模拟测试 make_board=WalnutPi-1B ====="
           MODEL_CONF="make-fnnas/fnnas-files/common-files/etc/model_database.conf"
           make_board="WalnutPi-1B"
-          echo "===== 模拟 renas 完整逻辑 ====="
-          # 看 285-340 行决定 board_list
-          if [[ "${make_board}" == "all" ]]; then
-              board_list=":(yes)"
-          elif [[ "${make_board}" =~ ^(amlogic|rockchip|allwinner)([0-9]+_[0-9]+|[0-9]+)?$ ]]; then
-              platform_name="${BASH_REMATCH[1]}"
-              board_list=":($(echo "all" | sed -e 's/ /\|/g')):(yes)"
-          else
-              # 按 336 行的逻辑
-              make_fnnas=($(echo ${make_board} | tr '_' '\n' | awk 'NF && !seen[$0]++'))
-              board_list=":($(echo ${make_fnnas[@]} | sed -e 's/ /\|/g')):(yes)"
-          fi
-          echo "board_list=${board_list}"
-          echo "===== 测试 clean_model_conf | grep | awk ====="
-          sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' "${MODEL_CONF}" | grep -E "^[^#].+" | grep -E "^.*${board_list}$" | head -3
-          echo "===== 完整模拟 kernel_from ====="
-          kernel_from=($(sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' "${MODEL_CONF}" | grep -E "^[^#].+" | grep -E "^.*${board_list}$" | awk -F':' '{print $9}' | sort -u | xargs))
-          echo "kernel_from 数组: ${kernel_from[@]}"
-          echo "kernel_from 元素数: ${#kernel_from[@]}"
+          make_fnnas=($(echo ${make_board} | tr '_' '\n' | awk 'NF && !seen[$0]++'))
+          echo "make_fnnas: ${make_fnnas[@]}"
+          for board_list in ":(WalnutPi-1B):(yes)" ":WalnutPi-1B:" ":WalnutPi-1B:(yes)" ":WalnutPi-1B"; do
+              echo "--- 测试 board_list='${board_list}' ---"
+              sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' "${MODEL_CONF}" | grep -E "^[^#].+" | grep -E "^.*${board_list}$" | head -3
+          done
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
@@ -129,7 +101,7 @@ jobs:
           find . -type f -size +100M 2>/dev/null
           echo "===== 开始编译 ====="
           # sudo -E 保留环境变量
-          sudo -E env KERNEL_TAGS="allwinner" ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
+          sudo -E env KERNEL_TAGS="allwinner" ./renas -b allwinner -k "${KERNEL}" -n "github-ci"
           echo "===== 编译后再查一遍 ====="
           find . -iname "*walnutpi*" 2>/dev/null
           find . -iname "fnnas_*arm64*.img" 2>/dev/null | head -20
