@@ -88,23 +88,14 @@ jobs:
           KERNEL_TAGS: "allwinner"
         working-directory: ${{ github.workspace }}
         run: |
+          # 关键修复: 把 model_database.conf 里的所有 tab 替换成空格 (修复 w208 行的 tab 问题)
+          sed -i 's/\t/ /g' "make-fnnas/fnnas-files/common-files/etc/model_database.conf"
+          echo "===== 验证 w208 修复 ====="
+          grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | cat -A | head -1
+          
           # 强制导出 KERNEL_TAGS
           export KERNEL_TAGS="allwinner"
           echo "KERNEL_TAGS=${KERNEL_TAGS}"
-          
-          # ===== 关键调试 =====
-          echo "PWD: $(pwd)"
-          echo "make_path: ${PWD}/fnnas"
-          echo "resource_path: ${PWD}/make-fnnas"
-          echo ""
-          echo "===== 仓库 model_database.conf ====="
-          ls -la "make-fnnas/fnnas-files/common-files/etc/model_database.conf"
-          echo "仓库 conf 里 w208 行数:"
-          grep -c "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" || echo "仓库 conf 里没有 w208"
-          echo ""
-          echo "===== fnnas/ 临时目录下的 model_database.conf ====="
-          find "fnnas" -name "model_database.conf" 2>/dev/null
-          
           chmod +x renas
           echo "===== 检查 renas 里 OUT 路径定义 ====="
           grep -n -E "OUT|out/" renas | head -30
@@ -116,7 +107,12 @@ jobs:
           echo "===== 仓库根目录所有大文件 ====="
           find . -type f -size +100M 2>/dev/null
           echo "===== 开始编译 ====="
-          sudo -E env KERNEL_TAGS="allwinner" ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
+          # 用 -b WalnutPi-1B 强制编译单个 board
+          sudo -E env \
+            KERNEL_TAGS="allwinner" \
+            make_board="WalnutPi-1B" \
+            board_list=":(WalnutPi-1B):(yes)" \
+            ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
           echo "===== 编译后再查一遍 ====="
           find . -iname "*walnutpi*" 2>/dev/null
           find . -iname "fnnas_*arm64*.img" 2>/dev/null | head -20
