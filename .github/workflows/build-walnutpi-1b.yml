@@ -85,6 +85,20 @@ jobs:
           # 强制导出 KERNEL_TAGS
           export KERNEL_TAGS="allwinner"
           echo "KERNEL_TAGS=${KERNEL_TAGS}"
+          
+          # ===== 关键调试 =====
+          echo "PWD: $(pwd)"
+          echo "make_path: ${PWD}/fnnas"
+          echo "resource_path: ${PWD}/make-fnnas"
+          echo ""
+          echo "===== 仓库 model_database.conf ====="
+          ls -la "make-fnnas/fnnas-files/common-files/etc/model_database.conf"
+          echo "仓库 conf 里 w208 行数:"
+          grep -c "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" || echo "仓库 conf 里没有 w208"
+          echo ""
+          echo "===== fnnas/ 临时目录下的 model_database.conf ====="
+          find "fnnas" -name "model_database.conf" 2>/dev/null
+          
           chmod +x renas
           echo "===== 检查 renas 里 OUT 路径定义 ====="
           grep -n -E "OUT|out/" renas | head -30
@@ -96,22 +110,14 @@ jobs:
           echo "===== 仓库根目录所有大文件 ====="
           find . -type f -size +100M 2>/dev/null
           echo "===== 开始编译 ====="
-          # 用 -b WalnutPi-1B 强制编译单个 board
-          # 通过环境变量让 renas 知道 board_list 和 model_conf 路径
-          sudo -E env \
-            KERNEL_TAGS="allwinner" \
-            make_board="WalnutPi-1B" \
-            board_list=":(WalnutPi-1B):(yes)" \
-            model_conf="$(pwd)/make-fnnas/fnnas-files/common-files/etc/model_database.conf" \
-            ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
+          sudo -E env KERNEL_TAGS="allwinner" ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
           echo "===== 编译后再查一遍 ====="
           find . -iname "*walnutpi*" 2>/dev/null
           find . -iname "fnnas_*arm64*.img" 2>/dev/null | head -20
           echo "===== 各可能输出目录 ====="
           ls -la out/ 2>/dev/null || echo "no out/"
-          ls -la fnnas-arm64/out/ 2>/dev/null || echo "no fnnas-arm64/out/"
+          ls -la fnnas/out/ 2>/dev/null || echo "no fnnas/out/"
           ls -la make-fnnas/out/ 2>/dev/null || echo "no make-fnnas/out/"
-
       - name: Verify WalnutPi-1B dtb is embedded
         working-directory: ${{ github.workspace }}
         run: |
