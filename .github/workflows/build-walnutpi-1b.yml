@@ -80,6 +80,15 @@ jobs:
           echo "===== renas 里 fdtfile 相关代码 ====="
           grep -n -B 1 -A 3 "fdtfile" renas | head -40
           echo ""
+          echo "===== renas 里 KERNEL_TAGS 完整相关代码 ====="
+          grep -n -B 2 -A 5 "KERNEL_TAGS" renas
+          echo ""
+          echo "===== KERNEL_TAGS 报错位置上下文 ====="
+          grep -n -B 5 -A 5 "Missing.*KERNEL_TAGS" renas
+          echo ""
+          echo "===== renas 头部 30 行 ====="
+          head -30 renas
+          echo ""
           echo "===== 当前 model_database.conf 里 WalnutPi ====="
           grep -i walnutpi make-fnnas/fnnas-files/common-files/etc/model_database.conf
       - name: Build WalnutPi-1B image via renas
