@@ -68,18 +68,20 @@ jobs:
       - name: Pre-build check
         working-directory: ${{ github.workspace }}
         run: |
-          echo "===== renas 里 285-340 行（完整 if-elif-else）====="
-          sed -n '285,340p' renas
+          echo "===== renas 里 model_conf 变量定义 ====="
+          grep -n "model_conf=" renas | head -20
           echo ""
-          echo "===== 模拟测试 make_board=WalnutPi-1B ====="
-          MODEL_CONF="make-fnnas/fnnas-files/common-files/etc/model_database.conf"
-          make_board="WalnutPi-1B"
-          make_fnnas=($(echo ${make_board} | tr '_' '\n' | awk 'NF && !seen[$0]++'))
-          echo "make_fnnas: ${make_fnnas[@]}"
-          for board_list in ":(WalnutPi-1B):(yes)" ":WalnutPi-1B:" ":WalnutPi-1B:(yes)" ":WalnutPi-1B"; do
-              echo "--- 测试 board_list='${board_list}' ---"
-              sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' "${MODEL_CONF}" | grep -E "^[^#].+" | grep -E "^.*${board_list}$" | head -3
-          done
+          echo "===== model_database.conf 引用 ====="
+          grep -n "model_database" renas | head -10
+          echo ""
+          echo "===== 找 model_conf 完整声明 (包括非赋值) ====="
+          grep -n -B 1 -A 1 "model_conf" renas | head -40
+          echo ""
+          echo "===== 当前 model_database.conf 路径检查 ====="
+          ls -la make-fnnas/fnnas-files/common-files/etc/model_database.conf
+          echo ""
+          echo "===== renas 默认 model_conf 路径 ====="
+          grep -n "fnnas-files" renas | head -10
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
