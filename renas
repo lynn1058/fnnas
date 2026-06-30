@@ -927,7 +927,7 @@ replace_kernel() {
         local supplement_dtb_dir="${common_files}/boot/dtb/${PLATFORM}"
         if [[ -d "${supplement_dtb_dir}" ]]; then
             echo -e "${INFO} Injecting supplement dtbs from [ ${supplement_dtb_dir} ] into BOOTFS"
-            cp -af "${supplement_dtb_dir}/." "${tag_bootfs}/dtb/${PLATFORM}/"
+            cp -rfT "${supplement_dtb_dir}" "${tag_bootfs}/dtb/${PLATFORM}/"
         fi
     [[ "${PLATFORM}" == "rockchip" ]] && ln -sf dtb "${tag_bootfs}/dtb-${kernel_name}"
     [[ "$(ls ${tag_bootfs}/dtb/${PLATFORM} -l 2>/dev/null | grep "^-" | wc -l)" -ge "2" ]] || error_msg "/boot/dtb/${PLATFORM} files is missing."
