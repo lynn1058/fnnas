@@ -68,28 +68,20 @@ jobs:
       - name: Pre-build check
         working-directory: ${{ github.workspace }}
         run: |
-          # 之前的调试代码
-          echo "===== 仓库 model_database.conf 里 w208 行原始 ====="
+          # 把 model_database.conf 里的所有 tab 替换成空格 (修复 w208 行的 tab 问题)
+          echo "===== 修复前 w208 行原始 ====="
           grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | cat -A
           echo ""
-          echo "===== w208 行字段数 ====="
-          grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | awk -F':' '{print NF}'
+          echo "===== 修复: 把所有 tab 替换成空格 ====="
+          sed -i 's/\t/ /g' "make-fnnas/fnnas-files/common-files/etc/model_database.conf"
+          echo "===== 修复后 w208 行 ====="
+          grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | cat -A
           echo ""
-          echo "===== w208 行 clean_model_conf 后模拟 ====="
+          echo "===== 重新测试 clean_model_conf ====="
           grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | cat -A
           echo ""
-          echo "===== w208 行 clean_model_conf 后字段数 ====="
-          grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | awk -F':' '{print NF}'
-          echo ""
-          echo "===== 用 make_board=allwinner 模拟完整 grep ====="
-          grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^.*:allwinner:.*:yes$" | head -3
-          # 关键: 修改 renas 支持 tab
-          echo "===== 修改 renas 的 clean_model_conf 让它支持 tab ====="
-          sed -i "s/'s/$$ $$$$ $$\*//g'/'s/[ \\t][ \\t]*//g'/" renas
-          echo "===== 修改后的 clean_model_conf ====="
-          grep "clean_model_conf" renas | head -5
-          echo "===== 重新测试 ====="
-          grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ \t][ \t]*//g' | grep -E "^.*:allwinner:.*:yes$" | head -3
+          echo "===== 重新测试 grep 匹配 ====="
+          grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^.*:allwinner:.*:yes$" && echo "✓ w208 现在能被识别" || echo "✗ w208 还是不能识别"
       - name: Build WalnutPi-1B image via renas
         env:
           KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
