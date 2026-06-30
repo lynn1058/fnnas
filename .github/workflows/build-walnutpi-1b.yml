@@ -100,8 +100,14 @@ jobs:
           echo "===== 仓库根目录所有大文件 ====="
           find . -type f -size +100M 2>/dev/null
           echo "===== 开始编译 ====="
-          # sudo -E 保留环境变量
-          sudo -E env KERNEL_TAGS="allwinner" ./renas -b allwinner -k "${KERNEL}" -n "github-ci"
+          # 用 -b WalnutPi-1B 强制编译单个 board
+          # 通过环境变量让 renas 知道 board_list 和 model_conf 路径
+          sudo -E env \
+            KERNEL_TAGS="allwinner" \
+            make_board="WalnutPi-1B" \
+            board_list=":(WalnutPi-1B):(yes)" \
+            model_conf="$(pwd)/make-fnnas/fnnas-files/common-files/etc/model_database.conf" \
+            ./renas -b WalnutPi-1B -k "${KERNEL}" -n "github-ci"
           echo "===== 编译后再查一遍 ====="
           find . -iname "*walnutpi*" 2>/dev/null
           find . -iname "fnnas_*arm64*.img" 2>/dev/null | head -20
