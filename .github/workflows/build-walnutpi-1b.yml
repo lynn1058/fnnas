@@ -19,9 +19,9 @@ on:
   workflow_dispatch:
     inputs:
       kernel:
-        description: 'Kernel series (e.g. 6.18.y)'
+        description: 'Kernel series (e.g. 6.12.y)'
         required: false
-        default: '6.18.y'
+        default: '6.12.y'
 
 permissions:
   contents: write
@@ -84,7 +84,7 @@ jobs:
           grep "w208" "make-fnnas/fnnas-files/common-files/etc/model_database.conf" | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^.*:allwinner:.*:yes$" && echo "✓ w208 现在能被识别" || echo "✗ w208 还是不能识别"
       - name: Build WalnutPi-1B image via renas
         env:
-          KERNEL: ${{ github.event.inputs.kernel || '6.18.y' }}
+          KERNEL: ${{ github.event.inputs.kernel || '6.12.y' }}
           KERNEL_TAGS: "allwinner"
         working-directory: ${{ github.workspace }}
         run: |
@@ -176,7 +176,7 @@ jobs:
           body: |
             自动构建的核桃派 1B 专用 FnNAS 镜像
 
-            - 内核: ${{ github.event.inputs.kernel || '6.18.y' }}
+            - 内核: ${{ github.event.inputs.kernel || '6.12.y' }}
             - commit: ${{ github.sha }}
             - workflow: ${{ github.workflow }} #${{ github.run_number }}
 
